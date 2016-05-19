@@ -34,20 +34,23 @@ def load_pile(file_list_selected):
                            gsconfig.UF_TILE_SIZE))  # 3 layers
 
     dc.metadata = { 
-	'cross_correlation': numpy.zeros(n_file),
-	'sharpness': numpy.zeros(n_file), 
-	'timestamp': numpy.zeros(n_file), 
-	'n_pixel_at_zero_intensity': numpy.zeros(n_file),
+	'cross_correlation': numpy.zeros(dc.n_file),
+	'sharpness': numpy.zeros(dc.n_file), 
+	'timestamp': numpy.zeros(dc.n_file), 
+	'n_pixel_at_zero_intensity': numpy.zeros(dc.n_file),
 	}
 
-    for i_file in range(n_file):
+    for i_file in range(dc.n_file):
 
         unit_field_filename_path = file_list_selected[i_file]
 	unit_field_image = gdal_array.LoadFile(unit_field_filename_path)
 
 	unit_field_metadata_filename_path = os.path.splitext(unit_field_filename_path)[0] + '.json'
+
         print unit_field_metadata_filename_path
-	unit_field_metadata = json.loads(unit_field_metadata_filename_path)
+        json_data = open(unit_field_metadata_filename_path)
+
+	unit_field_metadata = json.loads(json_data.read())
 
         #////////////////////////////////////////////////////////////////
         #// load a one band image for the selected unit field
