@@ -4,6 +4,7 @@ import os
 import argparse
 import logging
 import numpy
+import json
 
 from osgeo import gdal, gdal_array
 
@@ -11,7 +12,18 @@ UF_TILE_SIZE = 256
 
 def split_metatile(args, metatile):
     
+    mt_basename = os.path.basename(metatile)
     mt_ds = gdal.Open(metatile)
+
+    # Collect the metadata.  For now this is hardcoded to PlanetScope
+    # mosaic metatile naming.
+    metatile_md = {}
+
+    if os.path.exists(metatile+'.json'):
+        core_name = mt_basename.split('.')[2]
+        metatile_md['cpu_hostname'] = core_name.split('_')[2]
+        metatile_md['timestamp'] = int(core_name.split('_')[0]) * 1000000.0 \
+            + int(core_name.split('_')[1])
 
     work_band = mt_ds.GetRasterBand(1)
     alpha_band = mt_ds.GetRasterBand(4)
@@ -19,6 +31,7 @@ def split_metatile(args, metatile):
     assert mt_ds.RasterXSize % UF_TILE_SIZE == 0
     assert mt_ds.RasterYSize % UF_TILE_SIZE == 0
 
+    uf_count = 0
     for ytile in range(0,mt_ds.RasterYSize/256):
         for xtile in range(0,mt_ds.RasterXSize/256):
             uf_alpha = alpha_band.ReadAsArray(
@@ -42,13 +55,21 @@ def split_metatile(args, metatile):
             
             uf_name = os.path.join(
                 args.output_dir,
-                'uf_' + os.path.splitext(metatile)[0] \
-                    + '_%02d_%02d.tif' % (xtile, ytile))
+                ('uf_%02d_%02d_' + os.path.splitext(mt_basename)[0] + '.tif') % (
+                    xtile, ytile))
 
             # TODO: it would be nice to preserve the georeferencing on the
             # unit fields!
             gdal_array.SaveArray(uf_data, uf_name)
 
+            json.dump(metatile_md,
+                      open(os.path.splitext(uf_name)[0] + '.json','w'),
+                      indent=4)
+            uf_count += 1
+
+
+    logging.info('Write %d unit fields from file %s.', 
+                 uf_count, metatile)
 
     
 def main():
@@ -62,7 +83,8 @@ def main():
     
     args = aparser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
+    #logging.basicConfig(level=logging.DEBUG)
 
     for metatile in args.metatiles:
         split_metatile(args, metatile)
