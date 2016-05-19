@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+import logging
+import numpy
+
+from osgeo import gdal, gdal_array
+
+UF_TILE_SIZE = 256
+
+def split_metatile(args, metatile):
+    
+    mt_ds = gdal.Open(metatile)
+
+    work_band = mt_ds.GetRasterBand(1)
+    alpha_band = mt_ds.GetRasterBand(4)
+    
+    assert mt_ds.RasterXSize % UF_TILE_SIZE == 0
+    assert mt_ds.RasterYSize % UF_TILE_SIZE == 0
+
+    for ytile in range(0,mt_ds.RasterYSize/256):
+        for xtile in range(0,mt_ds.RasterXSize/256):
+            uf_alpha = alpha_band.ReadAsArray(
+                xtile*UF_TILE_SIZE, ytile*UF_TILE_SIZE,
+                UF_TILE_SIZE, UF_TILE_SIZE)
+
+            # we want to skip unit fields where we don't have all the pixels.
+            total_pixels = UF_TILE_SIZE * UF_TILE_SIZE
+            missing_pixels = total_pixels - numpy.count_nonzero(uf_alpha)
+            missing_ratio = missing_pixels / float(total_pixels)
+
+            if missing_ratio > 0:
+                logging.debug('Skip tile %dx%d of %s, missing %d pixels.',
+                              xtile, ytile, metatile, missing_pixels)
+                continue
+
+            uf_data = work_band.ReadAsArray(
+                xtile*UF_TILE_SIZE, ytile*UF_TILE_SIZE,
+                UF_TILE_SIZE, UF_TILE_SIZE)
+
+            
+            uf_name = os.path.join(
+                args.output_dir,
+                'uf_' + os.path.splitext(metatile)[0] \
+                    + '_%02d_%02d.tif' % (xtile, ytile))
+
+            # TODO: it would be nice to preserve the georeferencing on the
+            # unit fields!
+            gdal_array.SaveArray(uf_data, uf_name)
+
+
+    
+def main():
+    aparser = argparse.ArgumentParser(
+        description='Split metatile stack into unit fields.')
+
+    aparser.add_argument('-o', '--output-dir', default='.',
+                         help='Directory to put unit fields in.')
+    aparser.add_argument('metatiles', nargs='*',
+                         help='Input metatiles')
+    
+    args = aparser.parse_args()
+
+    logging.basicConfig(level=logging.DEBUG)
+
+    for metatile in args.metatiles:
+        split_metatile(args, metatile)
+        
+
+if __name__ == '__main__':
+    main()
+
