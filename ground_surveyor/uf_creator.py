@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
 import os
-import argparse
 import logging
 import numpy
 import json
@@ -10,7 +7,7 @@ from osgeo import gdal, gdal_array
 
 UF_TILE_SIZE = 256
 
-def split_metatile(args, metatile):
+def split_metatile(output_dir, metatile):
     
     mt_basename = os.path.basename(metatile)
     mt_ds = gdal.Open(metatile)
@@ -54,7 +51,7 @@ def split_metatile(args, metatile):
 
             
             uf_name = os.path.join(
-                args.output_dir,
+                output_dir,
                 ('uf_%02d_%02d_' + os.path.splitext(mt_basename)[0] + '.tif') % (
                     xtile, ytile))
 
@@ -72,24 +69,3 @@ def split_metatile(args, metatile):
                  uf_count, metatile)
 
     
-def main():
-    aparser = argparse.ArgumentParser(
-        description='Split metatile stack into unit fields.')
-
-    aparser.add_argument('-o', '--output-dir', default='.',
-                         help='Directory to put unit fields in.')
-    aparser.add_argument('metatiles', nargs='*',
-                         help='Input metatiles')
-    
-    args = aparser.parse_args()
-
-    logging.basicConfig(level=logging.INFO)
-    #logging.basicConfig(level=logging.DEBUG)
-
-    for metatile in args.metatiles:
-        split_metatile(args, metatile)
-        
-
-if __name__ == '__main__':
-    main()
-
