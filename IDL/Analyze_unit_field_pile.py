@@ -37,9 +37,9 @@ print 'Found ',n_file,' files.'
 #// We create variables which will carry the datacube and metadata.
 #// They will be written into a file a the end of the code.
 
-datacube = numpy.zeros((n_pix_unit_field_on_the_side,
+datacube = numpy.zeros((3,n_file+1,
 			n_pix_unit_field_on_the_side,
-			3,n_file+1))  # 3 layers
+			n_pix_unit_field_on_the_side))  # 3 layers
 
 datacube_metadata = { 
 	'cross_correlation': numpy.zeros(n_file),
@@ -53,14 +53,14 @@ for i_file in range(len(file_list_selected)):
 	filename_path = file_list_selected[i_file]
 	unit_field_image = gdal_array.LoadFile(filename_path)
 
-	datacube[:,:,0,i_file] = unit_field_image
+	datacube[0,i_file,:,:] = unit_field_image
 
         #////////////////////////////////////////////////////////////////
         #// create image of small scale fluctuations
 
 	unit_field_image_median = scipy.signal.medfilt(unit_field_image,median_filter_size)
 	unit_field_image_small_scales = unit_field_image - unit_field_image_median
-	datacube[:,:,1,i_file] = unit_field_image_small_scales
+	datacube[1,i_file,:,:] = unit_field_image_small_scales
 
 
 #////////////////////////////////////////////////////////////////
@@ -72,7 +72,6 @@ for i_file in range(len(file_list_selected)):
 #////////////////////////////////////////////////////////////////
 #// estimate the sharpness of the image
 
-	print unit_field_image_small_scales.shape
 	datacube_metadata['sharpness'][i_file] = numpy.std( unit_field_image_small_scales )
 
 
@@ -82,12 +81,12 @@ for i_file in range(len(file_list_selected)):
 for i_pix in range(n_pix_unit_field_on_the_side):
 	for j_pix in range(n_pix_unit_field_on_the_side):
 
-		datacube[i_pix,j_pix][0][-1] = \
-		    numpy.median( datacube[i_pix,j_pix,0,:])
-		datacube[i_pix,j_pix][1][-1] = \
-		    numpy.median( datacube[i_pix,j_pix,1,:])
-		datacube[i_pix,j_pix][2][-1] = \
-		    numpy.median( datacube[i_pix,j_pix,2,:])
+		datacube[0][-1][i_pix,j_pix] = \
+		    numpy.median( datacube[0,:,i_pix,j_pix])
+		datacube[1][-1][i_pix,j_pix] = \
+		    numpy.median( datacube[1,:,i_pix,j_pix])
+		datacube[2][-1][i_pix,j_pix] = \
+		    numpy.median( datacube[2,:,i_pix,j_pix])
 
 
    
@@ -106,23 +105,24 @@ for key in datacube_metadata.keys():
 	except:
 		pass
 
-json.dump(datacube_metadata,open('datacube_metadata.json','w'))
+json.dump(datacube_metadata,open('datacube_metadata.json','w'),
+	  indent=4)
 
 gdal_array.SaveArray(
-	numpy.reshape(datacube[:,:,0,:],
-		      (n_pix_unit_field_on_the_side,
+	numpy.reshape(datacube[0,:,:,:],
+		      (n_file+1,
 		       n_pix_unit_field_on_the_side,
-		       n_file+1)),
+		       n_pix_unit_field_on_the_side)),
 	'datacube_raw.tif')
 gdal_array.SaveArray(
-	numpy.reshape(datacube[:,:,1,:],
-		      (n_pix_unit_field_on_the_side,
+	numpy.reshape(datacube[1,:,:,:],
+		      (n_file+1,
 		       n_pix_unit_field_on_the_side,
-		       n_file+1)),
+		       n_pix_unit_field_on_the_side)),
 	'datacube_small.tif')
 gdal_array.SaveArray(
-	numpy.reshape(datacube[:,:,2,:],
-		      (n_pix_unit_field_on_the_side,
+	numpy.reshape(datacube[2,:,:,:],
+		      (n_file+1,
 		       n_pix_unit_field_on_the_side,
-		       n_file+1)),
+		       n_pix_unit_field_on_the_side)),
 	'datacube_large.tif')
