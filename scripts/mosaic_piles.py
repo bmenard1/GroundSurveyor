@@ -12,6 +12,8 @@ def main():
     aparser = argparse.ArgumentParser(
         description='Run analysis on a set of unit field piles')
 
+    aparser.add_argument('--measure', default='sharpness',
+                         help='metadata measure to maximize')
     aparser.add_argument('dir', default='.',
                          help='Directory containing a set of unit field piles.')
     
@@ -41,7 +43,7 @@ def main():
         sharpest_value = 0
 
         for i in range(len(pile_md['sharpness'])):
-            sharpness = pile_md['sharpness'][i]
+            sharpness = pile_md[args.measure][i]
             if sharpness > sharpest_value:
                 sharpest_value = sharpness
                 sharpest_i = i
