@@ -1,0 +1,23 @@
+
+** Immediate
+
+- improve the intensity normalization between unit fields
+- deploy to a series of metatiles and create overall map
+- implement unit field selection with multiple selection criteria
+
+
+** Intermediate
+
+- one the unit fields have been selected for the best image, one can import the corresponding G & B images
+- map of large-scale variance
+
+
+
+** Long term
+
+- the metadata stored in the json file can be used to make maps of data quality and related statistics.
+
+
+
+
+
