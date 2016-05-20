@@ -4,6 +4,7 @@ import os
 import numpy
 import cv2
 import scipy
+import scipy.ndimage
 import scipy.signal
 import json
 
@@ -34,7 +35,9 @@ def load_pile(file_list_selected):
                            gsconfig.UF_TILE_SIZE))  # 3 layers
 
     dc.metadata = { 
-	'cross_correlation': numpy.zeros(dc.n_file),
+	'cross_correlation_raw': numpy.zeros(dc.n_file),
+	'cross_correlation_small': numpy.zeros(dc.n_file),
+	'cross_correlation_large': numpy.zeros(dc.n_file),
 	'sharpness': numpy.zeros(dc.n_file), 
 	'timestamp': numpy.zeros(dc.n_file), 
 	'n_pixel_at_zero_intensity': numpy.zeros(dc.n_file),
@@ -64,7 +67,10 @@ def load_pile(file_list_selected):
 
 def analyse_pile(dc):
     for i_file in range(dc.n_file):
-	unit_field_image = datacube[0,i_file,:,:]
+
+        print i_file,dc.n_file
+        
+	unit_field_image = dc.cube[0,i_file,:,:]
         
         #////////////////////////////////////////////////////////////////
         #// create image of small scale fluctuations
@@ -75,11 +81,11 @@ def analyse_pile(dc):
 
 	#////////////////////////////////////////////////////////////////
 	#// create image of large scale fluctuations
-        img_8bit = (unit_field_image/16).astype(numpy.uint8)
-        #cv_img = cv2.cvtColor(img_8bit, cv2.COLOR_GRAY2GRAY)
-	#unit_field_image_large_scales = cv2.Canny(unit_field_image,
-        #                                          canny_filter_size_min,canny_filter_size_max)
+        I_large_min = scipy.ndimage.filters.gaussian_filter(unit_field_image, 6)
+        I_large_max = scipy.ndimage.filters.gaussian_filter(unit_field_image, 20)
 
+        unit_field_image_large_scales = I_large_min - I_large_max
+        dc.cube[2,i_file,:,:] = unit_field_image_large_scales
 
 	#////////////////////////////////////////////////////////////////
 	#// estimate the sharpness of the image
@@ -117,6 +123,35 @@ def compute_median(dc):
 
     # field_info.intensity_median[i_file] = my_median_intensity
     # field_info.intensity_sigma_normalized[i_file] = my_sigma_normalized
+
+
+def compute_spatial_cross_correlations(dc):
+
+    #////////////////////////////////////////////////////////////////
+    ## Spatial cross-correlations with respect to the median image
+
+    for i_layer in range(3):
+
+        print i_layer,' / ',2
+
+        Y = dc.cube[i_layer][-1][:,:]
+
+        if i_layer == 0:
+            my_key = 'cross_correlation_raw'
+        if i_layer == 1:
+            my_key = 'cross_correlation_small'
+        if i_layer == 2:
+            my_key = 'cross_correlation_large'
+
+        for i_file in range(dc.n_file):
+
+            X = dc.cube[i_layer][i_file][:,:]
+            print numpy.median(X),numpy.median(Y)
+            print my_key,'=',scipy.stats.spearmanr(X,Y,axis=None)[0]
+            dc.metadata[my_key][i_file] = scipy.stats.spearmanr(X,Y,axis=None)[0]
+
+
+
 
 def save_pile(dc):
     for key in dc.metadata.keys():
@@ -165,13 +200,27 @@ if __name__ == '__main__':
 
     file_list_selected = [os.path.join(metatile_directory,name) \
 			      for name in filter(our_coord,file_list)]
+
+    file_list_selected = file_list_selected[0:4]
+
     n_file = len(file_list_selected)
     print 'Found ',n_file,' files.'
 
 
     dc = load_pile(file_list_selected)
+    print 'analyse...'
     analyse_pile(dc)
+    print 'median images...'
     compute_median(dc)
+    print 'spatial cross-correlations...'
+    compute_spatial_cross_correlations(dc)
+    print 'save...'
     save_pile(dc)
 
     
+
+
+        #img_8bit = (unit_field_image/16).astype(numpy.uint8)
+        #cv_img = cv2.cvtColor(img_8bit, cv2.COLOR_GRAY2GRAY)
+	#unit_field_image_large_scales = cv2.Canny(unit_field_image,
+        #                                          canny_filter_size_min,canny_filter_size_max)
