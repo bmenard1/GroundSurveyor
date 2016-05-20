@@ -153,14 +153,15 @@ def compute_spatial_cross_correlations(dc):
 
 
 
-def save_pile(dc):
+def save_pile(dc, basepath=''):
     for key in dc.metadata.keys():
 	try:
             dc.metadata[key] = list(dc.metadata[key])
 	except:
             pass
 
-    json.dump(dc.metadata,open('datacube_metadata.json','w'),
+    json.dump(dc.metadata,
+              open(basepath+'datacube_metadata.json','w'),
               indent=4)
 
     gdal_array.SaveArray(
@@ -168,19 +169,19 @@ def save_pile(dc):
 		      (dc.n_file+1,
 		       n_pix_unit_field_on_the_side,
 		       n_pix_unit_field_on_the_side)),
-	'datacube_raw.tif')
+	basepath+'datacube_raw.tif')
     gdal_array.SaveArray(
 	numpy.reshape(dc.cube[1,:,:,:],
 		      (dc.n_file+1,
 		       n_pix_unit_field_on_the_side,
 		       n_pix_unit_field_on_the_side)),
-	'datacube_small.tif')
+	basepath+'datacube_small.tif')
     gdal_array.SaveArray(
 	numpy.reshape(dc.cube[2,:,:,:],
 		      (dc.n_file+1,
 		       n_pix_unit_field_on_the_side,
 		       n_pix_unit_field_on_the_side)),
-	'datacube_large.tif')
+	basepath+'datacube_large.tif')
 
 
 if __name__ == '__main__':

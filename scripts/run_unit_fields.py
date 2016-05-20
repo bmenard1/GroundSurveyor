@@ -8,12 +8,12 @@ from ground_surveyor import analyse_unit_field_pile
 from ground_surveyor import analyse_unit_field_pile as uf_analyse
 
     
-def process_pile(filelist):
+def process_pile(out_basename, filelist):
     dc = uf_analyse.load_pile(filelist)
     uf_analyse.analyse_pile(dc)
     uf_analyse.compute_median(dc)
     uf_analyse.compute_spatial_cross_correlations(dc)
-    uf_analyse.save_pile(dc)
+    uf_analyse.save_pile(dc, out_basename)
     
 def main():
     aparser = argparse.ArgumentParser(
@@ -43,7 +43,8 @@ def main():
     for pile_name in piles.keys():
         print pile_name, len(piles[pile_name])
 
-        process_pile(piles[pile_name])
+        process_pile('%s/ufr_%s_' % (args.dir, pile_name),
+                     piles[pile_name])
 
         
     
