@@ -47,7 +47,6 @@ def load_pile(file_list_selected):
 
 	unit_field_metadata_filename_path = os.path.splitext(unit_field_filename_path)[0] + '.json'
 
-        print unit_field_metadata_filename_path
         json_data = open(unit_field_metadata_filename_path)
 
 	unit_field_metadata = json.loads(json_data.read())
