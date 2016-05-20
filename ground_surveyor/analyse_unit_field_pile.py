@@ -59,16 +59,16 @@ def load_pile(file_list_selected):
         
 	#////////////////////////////////////////////////////////////////
 	#// get the timestamp
-	dc.metadata['timestamp'][i_file] = unit_field_metadata.timestamp
+	dc.metadata['timestamp'][i_file] = unit_field_metadata['timestamp']
 
     return dc
 
 def analyse_pile(dc):
     for i_file in range(dc.n_file):
 	unit_field_image = datacube[0,i_file,:,:]
-
-    #////////////////////////////////////////////////////////////////
-    #// create image of small scale fluctuations
+        
+        #////////////////////////////////////////////////////////////////
+        #// create image of small scale fluctuations
 	unit_field_image_median = scipy.signal.medfilt(unit_field_image,median_filter_size)
 	unit_field_image_small_scales = unit_field_image - unit_field_image_median
 	dc.cube[1,i_file,:,:] = unit_field_image_small_scales
@@ -76,7 +76,10 @@ def analyse_pile(dc):
 
 	#////////////////////////////////////////////////////////////////
 	#// create image of large scale fluctuations
-	unit_field_image_large_scales = cv2.Canny(img,canny_filter_size_min,canny_filter_size_max)
+        img_8bit = (unit_field_image/16).astype(numpy.uint8)
+        #cv_img = cv2.cvtColor(img_8bit, cv2.COLOR_GRAY2GRAY)
+	#unit_field_image_large_scales = cv2.Canny(unit_field_image,
+        #                                          canny_filter_size_min,canny_filter_size_max)
 
 
 	#////////////////////////////////////////////////////////////////
@@ -87,7 +90,7 @@ def analyse_pile(dc):
 	#////////////////////////////////////////////////////////////////
 	#// estimate the number of pixels with I=0
 	dc.metadata['n_pixel_at_zero_intensity'][i_file] = \
-		sum(intensity_value == 0 for intensity_value in unit_field_image)
+            (unit_field_image.shape[0] * unit_field_image.shape[1]) - numpy.count_nonzero(unit_field_image) 
 
 
 def compute_median(dc):
