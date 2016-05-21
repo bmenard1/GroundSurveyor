@@ -20,8 +20,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
     #logging.basicConfig(level=logging.DEBUG)
 
-    for metatile in args.metatiles:
-        uf_creator.split_metatile(args.output_dir, metatile)
+    uf_creator.split_metatiles(args.output_dir, args.metatiles)
         
 
 if __name__ == '__main__':

@@ -5,32 +5,49 @@ import json
 
 from osgeo import gdal, gdal_array
 
-UF_TILE_SIZE = 256
+from ground_surveyor import gsconfig
 
-def split_metatile(output_dir, metatile):
-    
-    mt_basename = os.path.basename(metatile)
-    mt_ds = gdal.Open(metatile)
+UF_TILE_SIZE = gsconfig.UF_TILE_SIZE
 
-    # Collect the metadata.  For now this is hardcoded to PlanetScope
-    # mosaic metatile naming.
-    metatile_md = {}
-
-    if os.path.exists(metatile+'.json'):
-        core_name = mt_basename.split('.')[2]
-        metatile_md['cpu_hostname'] = core_name.split('_')[2]
-        metatile_md['timestamp'] = int(core_name.split('_')[0]) * 1000000.0 \
-            + int(core_name.split('_')[1])
-
-    work_band = mt_ds.GetRasterBand(1)
-    alpha_band = mt_ds.GetRasterBand(4)
-    
+def split_row_of_unit_fields(output_dir, metatiles, ytile):
+    # Determine metatile size and bit depth.
+    mt_ds = gdal.Open(metatiles[0])
     assert mt_ds.RasterXSize % UF_TILE_SIZE == 0
     assert mt_ds.RasterYSize % UF_TILE_SIZE == 0
 
-    uf_count = 0
-    for ytile in range(0,mt_ds.RasterYSize/256):
-        for xtile in range(0,mt_ds.RasterXSize/256):
+    x_uf_count = mt_ds.RasterXSize / UF_TILE_SIZE
+    y_uf_count = mt_ds.RasterYSize / UF_TILE_SIZE
+
+    dt = mt_ds.GetRasterBand(1).DataType
+
+    assert ytile >= 0 and ytile < y_uf_count
+
+    piles = [[]] * x_uf_count
+    piles_md = [[]] * x_uf_count
+
+    for metatile in metatiles:
+
+        mt_ds = gdal.Open(metatile)
+        mt_basename = os.path.basename(metatile)
+
+        assert mt_ds.RasterXSize == x_uf_count * UF_TILE_SIZE
+        assert mt_ds.RasterYSize == y_uf_count * UF_TILE_SIZE
+
+        # Collect the metadata.  For now this is hardcoded to PlanetScope
+        # mosaic metatile naming.
+        metatile_md = {}
+
+        if os.path.exists(metatile+'.json'):
+            core_name = mt_basename.split('.')[2]
+            metatile_md['cpu_hostname'] = core_name.split('_')[2]
+            metatile_md['timestamp'] = int(core_name.split('_')[0])*1000000.0 \
+                                       + int(core_name.split('_')[1])
+            metatile_md['filename'] = mt_basename
+
+        work_band = mt_ds.GetRasterBand(1)
+        alpha_band = mt_ds.GetRasterBand(4)
+        
+        for xtile in range(x_uf_count):
             uf_alpha = alpha_band.ReadAsArray(
                 xtile*UF_TILE_SIZE, ytile*UF_TILE_SIZE,
                 UF_TILE_SIZE, UF_TILE_SIZE)
@@ -45,27 +62,41 @@ def split_metatile(output_dir, metatile):
                               xtile, ytile, metatile, missing_pixels)
                 continue
 
-            uf_data = work_band.ReadAsArray(
-                xtile*UF_TILE_SIZE, ytile*UF_TILE_SIZE,
-                UF_TILE_SIZE, UF_TILE_SIZE)
+            piles[xtile].append(
+                work_band.ReadAsArray(
+                    xtile*UF_TILE_SIZE, ytile*UF_TILE_SIZE,
+                    UF_TILE_SIZE, UF_TILE_SIZE))
 
-            
-            uf_name = os.path.join(
-                output_dir,
-                ('uf_%02d_%02d_' + os.path.splitext(mt_basename)[0] + '.tif') % (
-                    xtile, ytile))
+            piles_md[xtile].append(metatile_md)
 
-            # TODO: it would be nice to preserve the georeferencing on the
-            # unit fields!
-            gdal_array.SaveArray(uf_data, uf_name)
+    # Now write all the piles.  They will have different numbers of bands
+    # depending on how many good unit fields were available. 
+    for xtile in range(x_uf_count):
+        uf_name = os.path.join(
+            output_dir,
+            'uf_%02d_%02d_raw.tif' % (xtile, ytile))
 
-            json.dump(metatile_md,
-                      open(os.path.splitext(uf_name)[0] + '.json','w'),
-                      indent=4)
-            uf_count += 1
+        # TODO: it would be nice to preserve the georeferencing on the
+        # unit fields!
+        gdal_array.SaveArray(numpy.array(piles[xtile]), uf_name)
+        
+        json.dump(piles_md[xtile],
+                  open(os.path.splitext(uf_name)[0] + '.json','w'),
+                  indent=4)
 
+def split_metatiles(output_dir, metatiles):
 
-    logging.info('Write %d unit fields from file %s.', 
-                 uf_count, metatile)
+    # Determine metatile size and bit depth.
+    mt_ds = gdal.Open(metatiles[0])
+    assert mt_ds.RasterXSize % UF_TILE_SIZE == 0
+    assert mt_ds.RasterYSize % UF_TILE_SIZE == 0
 
-    
+    x_uf_count = mt_ds.RasterXSize / UF_TILE_SIZE
+    y_uf_count = mt_ds.RasterYSize / UF_TILE_SIZE
+
+    for ytile in range(y_uf_count):
+        print 'Process Row: ', ytile
+        split_row_of_unit_fields(output_dir, metatiles, ytile)
+        
+    logging.info('Wrote %d piles to directory %s.',
+                 x_uf_count * y_uf_count, output_dir)
