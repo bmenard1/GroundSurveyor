@@ -8,8 +8,8 @@ from ground_surveyor import analyse_unit_field_pile
 from ground_surveyor import analyse_unit_field_pile as uf_analyse
 
     
-def process_pile(out_basename, filelist):
-    dc = uf_analyse.load_pile(filelist)
+def process_pile(out_basename, raw_pile):
+    dc = uf_analyse.load_pile(raw_pile)
     uf_analyse.analyse_pile(dc)
     uf_analyse.compute_median(dc)
     uf_analyse.compute_spatial_cross_correlations(dc)
@@ -19,32 +19,42 @@ def main():
     aparser = argparse.ArgumentParser(
         description='Run analysis on a set of unit field piles')
 
-    aparser.add_argument('dir', default='.',
-                         help='Directory containing a set of unit field piles.')
+    aparser.add_argument('piles', default='.', nargs='+',
+                         help='Pile(s) to process.')
     
     args = aparser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
     #logging.basicConfig(level=logging.DEBUG)
 
-    piles = {}
-    file_list = os.listdir(args.dir)
-    for filename in file_list:
-        if (not filename.startswith('uf_')) or (not filename.endswith('.tif')):
+    # As a special hack, if a single directory is provided, we will scan
+    # it for all piles.
+    if len(args.piles) == 1 and os.path.isdir(args.piles[0]):
+        dirname = args.piles[0]
+        args.piles = []
+        for filename in os.listdir(dirname):
+            if filename.startswith('uf_') and filename.endswith('_raw.tif'):
+                args.piles.append('%s/%s', dirname, filename)
+    
+
+    for filename in args.piles:
+        basename = os.path.basename(filename)
+        dirname = os.path.dirname(filename)
+        if dirname == '':
+            dirname = '.'
+
+        if (not basename.startswith('uf_')) \
+           or (not basename.endswith('_raw.tif')):
+            logging.warning('%s does not look like a pile, skipping.',
+                            filename)
             continue
 
-        pile_name = '_'.join(filename.split('_')[1:3])
+            
+        pile_name = '_'.join(basename.split('_')[1:3])
+        print pile_name
 
-        if pile_name not in piles.keys():
-            piles[pile_name] = []
-
-        piles[pile_name].append(os.path.join(args.dir,filename))
-
-    for pile_name in piles.keys():
-        print pile_name, len(piles[pile_name])
-
-        process_pile('%s/ufr_%s_' % (args.dir, pile_name),
-                     piles[pile_name])
+        process_pile('%s/ufr_%s' % (dirname, pile_name),
+                     filename)
 
         
     

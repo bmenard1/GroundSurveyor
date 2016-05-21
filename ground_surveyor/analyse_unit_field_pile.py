@@ -7,7 +7,7 @@ import scipy.ndimage
 import scipy.signal
 import json
 
-from osgeo import gdal_array
+from osgeo import gdal_array, gdal
 
 from ground_surveyor import gsconfig
 
@@ -24,10 +24,15 @@ class DataCube:
         self.metadata = {}
         self.input_metadata = []
 
-def load_pile(file_list_selected):
+def load_pile(pile_filename):
     dc = DataCube()
 
-    dc.n_file = len(file_list_selected)
+    raw_ds = gdal.Open(pile_filename)
+
+    dc.input_metadata = json.load(
+        open(os.path.splitext(pile_filename)[0]+'.json'))
+    
+    dc.n_file = raw_ds.RasterCount
 
     dc.cube = numpy.zeros((3,dc.n_file+1,  
                            gsconfig.UF_TILE_SIZE,
@@ -43,24 +48,9 @@ def load_pile(file_list_selected):
 	}
 
     for i_file in range(dc.n_file):
-
-        unit_field_filename_path = file_list_selected[i_file]
-	unit_field_image = gdal_array.LoadFile(unit_field_filename_path)
-
-	unit_field_metadata_filename_path = os.path.splitext(unit_field_filename_path)[0] + '.json'
-
-        json_data = open(unit_field_metadata_filename_path)
-
-	unit_field_metadata = json.loads(json_data.read())
-
-        #////////////////////////////////////////////////////////////////
-        #// load a one band image for the selected unit field
-        dc.cube[0,i_file,:,:] = unit_field_image
-        dc.input_metadata.append(unit_field_metadata)
-        
-	#////////////////////////////////////////////////////////////////
-	#// get the timestamp
-	dc.metadata['timestamp'][i_file] = unit_field_metadata['timestamp']
+	dc.cube[0,i_file,:,:] = raw_ds.GetRasterBand(i_file+1).ReadAsArray()
+	dc.metadata['timestamp'][i_file] \
+            = dc.input_metadata[i_file]['timestamp']
 
     return dc
 
@@ -160,27 +150,21 @@ def save_pile(dc, basepath=''):
             pass
 
     json.dump(dc.metadata,
-              open(basepath+'datacube_metadata.json','w'),
+              open(basepath+'_datacube_metadata.json','w'),
               indent=4)
 
-    gdal_array.SaveArray(
-	numpy.reshape(dc.cube[0,:,:,:],
-		      (dc.n_file+1,
-		       n_pix_unit_field_on_the_side,
-		       n_pix_unit_field_on_the_side)),
-	basepath+'datacube_raw.tif')
     gdal_array.SaveArray(
 	numpy.reshape(dc.cube[1,:,:,:],
 		      (dc.n_file+1,
 		       n_pix_unit_field_on_the_side,
 		       n_pix_unit_field_on_the_side)),
-	basepath+'datacube_small.tif')
+	basepath+'_small.tif')
     gdal_array.SaveArray(
 	numpy.reshape(dc.cube[2,:,:,:],
 		      (dc.n_file+1,
 		       n_pix_unit_field_on_the_side,
 		       n_pix_unit_field_on_the_side)),
-	basepath+'datacube_large.tif')
+	basepath+'_large.tif')
 
 
 if __name__ == '__main__':
