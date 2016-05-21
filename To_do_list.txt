@@ -1,4 +1,5 @@
 
+
 ** Immediate
 
 - improve the intensity normalization between unit fields
@@ -18,6 +19,21 @@
 - the metadata stored in the json file can be used to make maps of data quality and related statistics.
 
 
+=========================================================
+Notes, May 20
+
+we can create the small/large scale images when the unit fields are generated. This way all the image creation is done once.
+Actually, the point is that instead of creating many files for unit fields, one could directly create the unit fields piles. At the moment we are duplicating information on disk.
+
+Ok: we should separate the creation of the small/large scale images. They only need to be created once. Then we can compute all sorts of statistics to create the metadata.
+
+- make_unit_fields.py
+should include the small/large scale creation
+
+- analyse_unit_field.py
+- run_unit_fields.py
+should only generate metadata info
 
 
+- mosaic_piles.py
 

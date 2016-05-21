@@ -2,7 +2,6 @@
 
 import os
 import numpy
-import cv2
 import scipy
 import scipy.ndimage
 import scipy.signal
