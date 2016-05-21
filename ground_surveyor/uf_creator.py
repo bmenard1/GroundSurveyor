@@ -22,8 +22,8 @@ def split_row_of_unit_fields(output_dir, metatiles, ytile):
 
     assert ytile >= 0 and ytile < y_uf_count
 
-    piles = [[]] * x_uf_count
-    piles_md = [[]] * x_uf_count
+    piles = [[] for x in range(x_uf_count)]
+    piles_md = [[] for x in range(x_uf_count)]
 
     for metatile in metatiles:
 
