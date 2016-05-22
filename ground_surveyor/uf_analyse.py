@@ -75,11 +75,10 @@ def compute_median(dc):
         
     ## Now that all the unit fields are loaded in memory, we can compute 
     ##  the median intensity image
-    for i_pix in range(n_pix_unit_field_on_the_side):
-        for j_pix in range(n_pix_unit_field_on_the_side):
-            for i_layer in range(3):
-                dc.median[i_layer][i_pix,j_pix] = \
-                    numpy.median( dc.cube[i_layer,:,i_pix,j_pix])
+#    for i_pix in range(n_pix_unit_field_on_the_side):
+#        for j_pix in range(n_pix_unit_field_on_the_side):
+    for i_layer in range(3):
+        dc.median[i_layer] = numpy.median( dc.cube[i_layer,:,:,:],axis=0)
 
 
 

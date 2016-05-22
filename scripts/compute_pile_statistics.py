@@ -9,10 +9,19 @@ from ground_surveyor import uf_analyse
 
     
 def process_pile(out_basename, raw_pile):
+#    print 'load pile...'
     dc = uf_analyse.load_pile(raw_pile)
+
+#    print 'compute medians...'
     uf_analyse.compute_median(dc)
+
+#    print '1pt statistics...'
     uf_analyse.analyse_pile(dc)
+
+#    print 'cross-correlations...'
     uf_analyse.compute_spatial_cross_correlations(dc)
+
+#    print 'save it all...'
     uf_analyse.save_statistics(dc, out_basename)
     
 def main():
@@ -40,9 +49,10 @@ def main():
     ## -- Initialize progress bar
     counter = 0L
     current_progress = my_progress_bar.progressBar(0, len(args.piles))
-
+    print 'Found ',len(args.piles),' files'
+    
     for filename in args.piles:
-
+        
         counter += 1
         current_progress.updateAmount_and_write_if_needed(counter)
 
