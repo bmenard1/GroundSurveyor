@@ -55,7 +55,7 @@ def main():
 
     ## -- Initialize progress bar
     counter = 0L
-    current_progress = my_progress_bar.progressBar(0, len(args.piles))
+    current_progress = my_progress_bar.progressBar(0, len(my_pile_list))
     print 'Start time:',datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
     print 'Found ',len(my_pile_list),' piles of unit fields. Expected: 256 for a whole metatile.'
     
