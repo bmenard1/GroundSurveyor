@@ -57,7 +57,7 @@ def load_pile(pile_filename):
 def analyse_pile(dc):
     for i_file in range(dc.n_file):
 
-        print i_file,dc.n_file
+#        print i_file,dc.n_file
         
 	unit_field_image = dc.cube[0,i_file,:,:]
         
@@ -121,8 +121,6 @@ def compute_spatial_cross_correlations(dc):
 
     for i_layer in range(3):
 
-        print i_layer,' / ',2
-
         Y = dc.cube[i_layer][-1][:,:]
 
         if i_layer == 0:
@@ -135,8 +133,6 @@ def compute_spatial_cross_correlations(dc):
         for i_file in range(dc.n_file):
 
             X = dc.cube[i_layer][i_file][:,:]
-            print numpy.median(X),numpy.median(Y)
-            print my_key,'=',scipy.stats.spearmanr(X,Y,axis=None)[0]
             dc.metadata[my_key][i_file] = scipy.stats.spearmanr(X,Y,axis=None)[0]
 
 
@@ -201,10 +197,3 @@ if __name__ == '__main__':
     print 'save...'
     save_pile(dc)
 
-    
-
-
-        #img_8bit = (unit_field_image/16).astype(numpy.uint8)
-        #cv_img = cv2.cvtColor(img_8bit, cv2.COLOR_GRAY2GRAY)
-	#unit_field_image_large_scales = cv2.Canny(unit_field_image,
-        #                                          canny_filter_size_min,canny_filter_size_max)

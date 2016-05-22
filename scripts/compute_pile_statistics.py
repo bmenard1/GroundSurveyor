@@ -4,8 +4,8 @@ import argparse
 import logging
 import os
 
-from ground_surveyor import analyse_unit_field_pile
-from ground_surveyor import analyse_unit_field_pile as uf_analyse
+from ground_surveyor import my_progress_bar
+from ground_surveyor import uf_analyse
 
     
 def process_pile(out_basename, raw_pile):
@@ -36,8 +36,16 @@ def main():
             if filename.startswith('uf_') and filename.endswith('_raw.tif'):
                 args.piles.append('%s/%s', dirname, filename)
     
+    
+    ## -- Initialize progress bar
+    counter = 0L
+    current_progress = my_progress_bar.progressBar(0, len(args.piles))
 
     for filename in args.piles:
+
+        counter += 1
+#        current_progress.updateAmount_and_write_if_needed(counter)
+
         basename = os.path.basename(filename)
         dirname = os.path.dirname(filename)
         if dirname == '':

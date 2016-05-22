@@ -2,12 +2,16 @@ import os
 import logging
 import numpy
 import json
+import scipy
+import scipy.signal
+import scipy.ndimage
 
 from osgeo import gdal, gdal_array
 
 from ground_surveyor import gsconfig
 
 UF_TILE_SIZE = gsconfig.UF_TILE_SIZE
+MEDIAN_FILTER_SIZE = 11
 
 def split_row_of_unit_fields(output_dir, metatiles, ytile):
     # Determine metatile size and bit depth.
@@ -26,6 +30,10 @@ def split_row_of_unit_fields(output_dir, metatiles, ytile):
     piles_md = [[] for x in range(x_uf_count)]
 
     for metatile in metatiles:
+
+        ##
+        ## >> BM's QUESTION: don't you mean SCENE instead of metatile here?
+        ##
 
         mt_ds = gdal.Open(metatile)
         mt_basename = os.path.basename(metatile)
@@ -76,13 +84,50 @@ def split_row_of_unit_fields(output_dir, metatiles, ytile):
             output_dir,
             'uf_%02d_%02d_raw.tif' % (xtile, ytile))
 
-        # TODO: it would be nice to preserve the georeferencing on the
-        # unit fields!
+        ## TODO: it would be nice to preserve the georeferencing on the
+        ## unit fields!
         gdal_array.SaveArray(numpy.array(piles[xtile]), uf_name)
         
         json.dump(piles_md[xtile],
                   open(os.path.splitext(uf_name)[0] + '.json','w'),
                   indent=4)
+
+
+        ## -- added by BM: now that the piles are in memory, we create
+        ## two additional layers with small and large scale fluctuations
+        ## and write the files to the same directory.
+        ## This is considered to be raw data. Note that we are not doing
+        ## any statistics over a pile at this point.
+
+        n_file = len(piles[xtile])
+        pile_small = numpy.zeros((n_file,gsconfig.UF_TILE_SIZE,gsconfig.UF_TILE_SIZE))
+        pile_large = numpy.zeros((n_file,gsconfig.UF_TILE_SIZE,gsconfig.UF_TILE_SIZE))
+
+        for i_file in range(n_file):
+
+            unit_field_image = piles[xtile][i_file]
+                
+            ## -- create image of small scale fluctuations
+            unit_field_image_median = scipy.signal.medfilt(unit_field_image,MEDIAN_FILTER_SIZE)
+            unit_field_image_small_scales = unit_field_image - unit_field_image_median
+            pile_small[i_file,:,:] = unit_field_image_small_scales
+
+	    ## -- create image of large scale fluctuations
+            I_large_min = scipy.ndimage.filters.gaussian_filter(unit_field_image, 6)
+            I_large_max = scipy.ndimage.filters.gaussian_filter(unit_field_image, 20)
+            unit_field_image_large_scales = I_large_min - I_large_max
+            pile_large[i_file,:,:] = unit_field_image_large_scales
+
+
+        ## Now we write the files. One for a pile of small scale fluctuations, and one
+        ## for large scale fluctuations.
+
+        gdal_array.SaveArray(numpy.array(pile_small), os.path.splitext(uf_name)[0] + '_small.tif')
+        gdal_array.SaveArray(numpy.array(pile_large), os.path.splitext(uf_name)[0] + '_large.tif')
+
+
+
+
 
 def split_metatiles(output_dir, metatiles):
 
@@ -97,6 +142,12 @@ def split_metatiles(output_dir, metatiles):
     for ytile in range(y_uf_count):
         print 'Process Row: ', ytile
         split_row_of_unit_fields(output_dir, metatiles, ytile)
+
+
+#     if choice_create_additional_layers == True:
+#         print 'Creating small/large scale images'
+#         for ytile in range(y_uf_count):
+#             create_additional_layers(output_dir, ...)
         
     logging.info('Wrote %d piles to directory %s.',
                  x_uf_count * y_uf_count, output_dir)
