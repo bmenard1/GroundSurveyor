@@ -37,3 +37,14 @@ should only generate metadata info
 
 - mosaic_piles.py
 
+====================
+May 22;
+
+- to add in the code later:
+    # data = 1.*data
+    # my_median_intensity = MEDIAN(data)
+    # data /= my_median_intensity
+    # data *= 128.
+    # my_sigma_normalized = STDDEV(data)  ;ROBUST_SIGMA(data)
+    # field_info.intensity_median[i_file] = my_median_intensity
+    # field_info.intensity_sigma_normalized[i_file] = my_sigma_normalized

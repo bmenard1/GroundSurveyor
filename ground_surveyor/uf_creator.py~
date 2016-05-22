@@ -12,9 +12,6 @@ from ground_surveyor import gsconfig
 
 UF_TILE_SIZE = gsconfig.UF_TILE_SIZE
 MEDIAN_FILTER_SIZE = 11
-LARGE_SCALE_FILTER_SIZE_MIN = 6
-LARGE_SCALE_FILTER_SIZE_MAX = 20
-
 
 def split_row_of_unit_fields(output_dir, metatiles, ytile):
     # Determine metatile size and bit depth.
@@ -116,8 +113,8 @@ def split_row_of_unit_fields(output_dir, metatiles, ytile):
             pile_small[i_file,:,:] = unit_field_image_small_scales
 
 	    ## -- create image of large scale fluctuations
-            I_large_min = scipy.ndimage.filters.gaussian_filter(unit_field_image, LARGE_SCALE_FILTER_SIZE_MIN)
-            I_large_max = scipy.ndimage.filters.gaussian_filter(unit_field_image, LARGE_SCALE_FILTER_SIZE_MAX)
+            I_large_min = scipy.ndimage.filters.gaussian_filter(unit_field_image, 6)
+            I_large_max = scipy.ndimage.filters.gaussian_filter(unit_field_image, 20)
             unit_field_image_large_scales = I_large_min - I_large_max
             pile_large[i_file,:,:] = unit_field_image_large_scales
 

@@ -26,13 +26,14 @@ class DataCube:
 
 def load_pile(pile_filename):
     dc = DataCube()
-
+    
     ## -- This looks for files with "ufr_". It would be good to get rid of the extra "r" at some point.
     filename_only = pile_filename.split('/')[-1]
+    filename_base = 'ufr' + filename_only.strip('raw.tif').strip('uf')
     path_only = os.path.dirname(pile_filename)
-    pile_small_filename = path_only + '/' + 'ufr' + filename_only.strip('raw.tif').strip('uf')+'small.tif'
-    pile_large_filename = path_only + '/' + 'ufr' + filename_only.strip('raw.tif').strip('uf')+'large.tif'
-
+    pile_small_filename = path_only + '/' + filename_base +'small.tif'
+    pile_large_filename = path_only + '/' + filename_base +'large.tif'
+    
     raw_ds = gdal.Open(pile_filename)
     raw_small = gdal.Open(pile_small_filename)
     raw_large = gdal.Open(pile_large_filename)
@@ -44,29 +45,43 @@ def load_pile(pile_filename):
 
     dc.cube = numpy.zeros((3,dc.n_file,  
                            gsconfig.UF_TILE_SIZE,
-                           gsconfig.UF_TILE_SIZE))  # 3 layers
-
+                           gsconfig.UF_TILE_SIZE))
+    
+    ## one median image for each layer (raw, small, large)
+    dc.median = numpy.zeros( (3,gsconfig.UF_TILE_SIZE,gsconfig.UF_TILE_SIZE,) )
+    
     dc.metadata = { 
-	'cross_correlation_raw': numpy.zeros(dc.n_file),
+        'cross_correlation_raw': numpy.zeros(dc.n_file),
 	'cross_correlation_small': numpy.zeros(dc.n_file),
 	'cross_correlation_large': numpy.zeros(dc.n_file),
 	'sharpness': numpy.zeros(dc.n_file), 
 	'timestamp': numpy.zeros(dc.n_file), 
 	'n_pixel_at_zero_intensity': numpy.zeros(dc.n_file)}
-#        'median_image': numpy.zeros((gsconfig.UF_TILE_SIZE,gsconfig.UF_TILE_SIZE))
-#	}
-
+    
     for i_file in range(dc.n_file):
-
-## BM: why +1 needed?
+        
+        ## BM: why +1 needed?
         dc.cube[0,i_file,:,:] = raw_ds.GetRasterBand(i_file+1).ReadAsArray()
         dc.cube[1,i_file,:,:] = raw_small.GetRasterBand(i_file+1).ReadAsArray()
         dc.cube[2,i_file,:,:] = raw_large.GetRasterBand(i_file+1).ReadAsArray()
-
+        
 	dc.metadata['timestamp'][i_file] \
             = dc.input_metadata[i_file]['timestamp']
 
     return dc
+    
+    
+def compute_median(dc):
+        
+    ## Now that all the unit fields are loaded in memory, we can compute 
+    ##  the median intensity image
+    for i_pix in range(n_pix_unit_field_on_the_side):
+        for j_pix in range(n_pix_unit_field_on_the_side):
+            for i_layer in range(3):
+                dc.median[i_layer][i_pix,j_pix] = \
+                    numpy.median( dc.cube[i_layer,:,i_pix,j_pix])
+
+
 
 def analyse_pile(dc):
     for i_file in range(dc.n_file):
@@ -82,30 +97,6 @@ def analyse_pile(dc):
             (unit_field_image.shape[0] * unit_field_image.shape[1]) - numpy.count_nonzero(unit_field_image) 
 
 
-def compute_median(dc):
-
-    ## Now that all the unit fields are loaded in memory, we can compute 
-    ##  the median intensity image
-    for i_pix in range(n_pix_unit_field_on_the_side):
-	for j_pix in range(n_pix_unit_field_on_the_side):
-            
-            dc.cube[0][-1][i_pix,j_pix] = \
-                numpy.median( dc.cube[0,:,i_pix,j_pix])
-            dc.cube[1][-1][i_pix,j_pix] = \
-                numpy.median( dc.cube[1,:,i_pix,j_pix])
-            dc.cube[2][-1][i_pix,j_pix] = \
-                numpy.median( dc.cube[2,:,i_pix,j_pix])
-
-
-   
-    # data = 1.*data
-    # my_median_intensity = MEDIAN(data)
-    # data /= my_median_intensity
-    # data *= 128.
-    # my_sigma_normalized = STDDEV(data)  ;ROBUST_SIGMA(data)
-
-    # field_info.intensity_median[i_file] = my_median_intensity
-    # field_info.intensity_sigma_normalized[i_file] = my_sigma_normalized
 
 
 def compute_spatial_cross_correlations(dc):
@@ -132,7 +123,7 @@ def compute_spatial_cross_correlations(dc):
 
 
 
-def save_pile(dc, basepath=''):
+def save_statistics(dc, basepath=''):
     for key in dc.metadata.keys():
 	try:
             dc.metadata[key] = list(dc.metadata[key])
@@ -143,18 +134,11 @@ def save_pile(dc, basepath=''):
               open(basepath+'_datacube_metadata.json','w'),
               indent=4)
 
-#     gdal_array.SaveArray(
-# 	numpy.reshape(dc.cube[1,:,:,:],
-# 		      (dc.n_file+1,
-# 		       n_pix_unit_field_on_the_side,
-# 		       n_pix_unit_field_on_the_side)),
-# 	basepath+'_small.tif')
-#     gdal_array.SaveArray(
-# 	numpy.reshape(dc.cube[2,:,:,:],
-# 		      (dc.n_file+1,
-# 		       n_pix_unit_field_on_the_side,
-# 		       n_pix_unit_field_on_the_side)),
-# 	basepath+'_large.tif')
+    gdal_array.SaveArray(numpy.reshape(dc.median,
+                                       (3,n_pix_unit_field_on_the_side,
+                                        n_pix_unit_field_on_the_side)),
+                         basepath + '_medians.tif')
+
 
 
 if __name__ == '__main__':
@@ -163,8 +147,7 @@ if __name__ == '__main__':
     i_field = 15
     j_field = 15
 
-    #////////////////////////////////////////////////////////////////
-    #// We search for files with the chosen unit_field coordinate
+    ##  We search for files with the chosen unit_field coordinate
 
     file_list = [f for f in os.listdir(metatile_directory) if os.path.isfile(os.path.join(metatile_directory, f))]
     field_coordinate = 'uf_%02d_%02d_' % (i_field, j_field)
@@ -189,5 +172,5 @@ if __name__ == '__main__':
     print 'spatial cross-correlations...'
     compute_spatial_cross_correlations(dc)
     print 'save...'
-    save_pile(dc)
+    save_statistics(dc)
 

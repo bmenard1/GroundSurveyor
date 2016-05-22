@@ -10,10 +10,10 @@ from ground_surveyor import uf_analyse
     
 def process_pile(out_basename, raw_pile):
     dc = uf_analyse.load_pile(raw_pile)
-    uf_analyse.analyse_pile(dc)
     uf_analyse.compute_median(dc)
+    uf_analyse.analyse_pile(dc)
     uf_analyse.compute_spatial_cross_correlations(dc)
-    uf_analyse.save_pile(dc, out_basename)
+    uf_analyse.save_statistics(dc, out_basename)
     
 def main():
     aparser = argparse.ArgumentParser(
@@ -44,7 +44,7 @@ def main():
     for filename in args.piles:
 
         counter += 1
-#        current_progress.updateAmount_and_write_if_needed(counter)
+        current_progress.updateAmount_and_write_if_needed(counter)
 
         basename = os.path.basename(filename)
         dirname = os.path.dirname(filename)
@@ -59,7 +59,7 @@ def main():
 
             
         pile_name = '_'.join(basename.split('_')[1:3])
-        print pile_name
+#        print pile_name
 
         process_pile('%s/ufr_%s' % (dirname, pile_name),
                      filename)
