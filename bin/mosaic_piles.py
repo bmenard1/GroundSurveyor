@@ -53,7 +53,7 @@ def main():
         
         raw_filename = os.path.join(
             args.dir,
-            'ufr_' + pile_name + '_datacube_raw.tif')
+            'uf_' + pile_name + '_raw.tif')
 
         raw = gdal_array.LoadFile(raw_filename)
         best_img = raw[sharpest_i]
