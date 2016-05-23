@@ -1,3 +1,5 @@
 *.tif
 *.json
 *.pyc
+MANIFEST
+dist
