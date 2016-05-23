@@ -27,16 +27,14 @@ class DataCube:
 def load_pile(pile_filename):
     dc = DataCube()
     
-    ## -- This looks for files with "ufr_". It would be good to get rid of the extra "r" at some point.
-    filename_only = pile_filename.split('/')[-1]
-    filename_base = 'ufr' + filename_only.strip('raw.tif').strip('uf')
-    path_only = os.path.dirname(pile_filename)
-    pile_small_filename = path_only + '/' + filename_base +'small.tif'
-    pile_large_filename = path_only + '/' + filename_base +'large.tif'
-    
     raw_ds = gdal.Open(pile_filename)
-    raw_small = gdal.Open(pile_small_filename)
-    raw_large = gdal.Open(pile_large_filename)
+    assert raw_ds is not None
+
+    raw_small = gdal.Open(pile_filename.replace('raw','raw_small'))
+    assert raw_small is not None
+    
+    raw_large = gdal.Open(pile_filename.replace('raw','raw_large'))
+    assert raw_large is not None
 
     dc.input_metadata = json.load(
         open(os.path.splitext(pile_filename)[0]+'.json'))
