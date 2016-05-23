@@ -7,7 +7,7 @@ setup(
     author_email='menard@jhu.edu',
     packages=['ground_surveyor'],
     scripts=['bin/compute_pile_statistics.py',
-             'bin/mosaic_tiles.py',
+             'bin/mosaic_piles.py',
              'bin/make_piles_of_unit_fields.py'],
     #url='http://pypi.python.org/pypi/GroundSurveyor/',
     url='http://github.com/bmenard1/GroundSurveyor/',
