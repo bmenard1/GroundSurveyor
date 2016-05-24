@@ -56,7 +56,11 @@ def main():
             'uf_' + pile_name + '_raw.tif')
 
         raw = gdal_array.LoadFile(raw_filename)
-        best_img = raw[sharpest_i]
+        if len(raw.shape) > 2:
+            best_img = raw[sharpest_i]
+        else:
+            best_img = raw
+
 #         gdal_array.SaveArray(
 #             best_img, 
 #             os.path.join(
