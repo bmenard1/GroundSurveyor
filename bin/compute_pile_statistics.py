@@ -70,7 +70,7 @@ def main():
             dirname = '.'
             
         pile_name = '_'.join(basename.split('_')[1:3])
-        process_pile('%s/ufr_%s' % (dirname, pile_name),
+        process_pile('%s/uf_%s' % (dirname, pile_name),
                      filename)
 
     print 'End time:',datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')

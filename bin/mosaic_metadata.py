@@ -33,7 +33,7 @@ def main():
 
     for filename in file_list:
         basename = os.path.basename(filename)
-        if (basename.startswith('ufr_')) \
+        if (basename.startswith('uf_')) \
            and (basename.endswith('_metadata.json')):
             file_list_selected.append(filename)
 

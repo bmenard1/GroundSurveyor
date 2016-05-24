@@ -41,7 +41,7 @@ def main():
 
     for filename in file_list:
         basename = os.path.basename(filename)
-        if (basename.startswith('ufr_')) \
+        if (basename.startswith('uf_')) \
            and (basename.endswith('_metadata.json')):
             file_list_selected.append(filename)
 
@@ -66,7 +66,7 @@ def main():
         
         raw_filename = os.path.join(
             args.dir,
-            'ufr_' + pile_name + '_medians.tif')
+            'uf_' + pile_name + '_medians.tif')
 
         raw = gdal_array.LoadFile(raw_filename)
 #        print raw.shape

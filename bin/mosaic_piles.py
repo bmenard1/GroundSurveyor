@@ -28,7 +28,7 @@ def main():
 
     file_list = os.listdir(args.dir)
     for filename in file_list:
-        if (not filename.startswith('ufr_')) or (not filename.endswith('_metadata.json')):
+        if (not filename.startswith('uf_')) or (not filename.endswith('_metadata.json')):
             continue
 
         pile_name = '_'.join(filename.split('_')[1:3])
@@ -61,7 +61,7 @@ def main():
 #             best_img, 
 #             os.path.join(
 #                 args.dir,
-#                 'ufr_' + pile_name + '_best.tif'))
+#                 'uf_' + pile_name + '_best.tif'))
         
         uf_i = int(pile_name.split('_')[0])
         uf_j = int(pile_name.split('_')[1])
