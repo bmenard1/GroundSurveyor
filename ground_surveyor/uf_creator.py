@@ -44,12 +44,11 @@ def split_row_of_unit_fields(output_dir, metatiles, ytile):
         # mosaic metatile naming.
         metatile_md = {}
 
-        if os.path.exists(metatile+'.json'):
-            core_name = mt_basename.split('.')[2]
-            metatile_md['cpu_hostname'] = core_name.split('_')[2]
-            metatile_md['timestamp'] = int(core_name.split('_')[0])*1000000.0 \
-                                       + int(core_name.split('_')[1])
-            metatile_md['filename'] = mt_basename
+        core_name = mt_basename.split('.')[2]
+        metatile_md['cpu_hostname'] = core_name.split('_')[2]
+        metatile_md['timestamp'] = int(core_name.split('_')[0])*1000000.0 \
+            + int(core_name.split('_')[1])
+        metatile_md['filename'] = mt_basename
 
         work_band = mt_ds.GetRasterBand(1)
         alpha_band = mt_ds.GetRasterBand(4)
@@ -89,6 +88,10 @@ def split_row_of_unit_fields(output_dir, metatiles, ytile):
 
         ## Handle the case where there is no data:
 
+
+        if len(piles[xtile]) == 0:
+            logging.warning('Skip %s, no values.', uf_name)
+            continue
 
         gdal_array.SaveArray(numpy.array(piles[xtile]), uf_name)
         
