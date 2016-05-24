@@ -34,10 +34,6 @@ def split_row_of_unit_fields(output_dir, metatiles, ytile):
 
     for metatile in metatiles:
 
-        ##
-        ## >> BM's QUESTION: don't you mean SCENE instead of metatile here?
-        ##
-
         mt_ds = gdal.Open(metatile)
         mt_basename = os.path.basename(metatile)
 
@@ -89,6 +85,11 @@ def split_row_of_unit_fields(output_dir, metatiles, ytile):
 
         ## TODO: it would be nice to preserve the georeferencing on the
         ## unit fields!
+
+
+        ## Handle the case where there is no data:
+
+
         gdal_array.SaveArray(numpy.array(piles[xtile]), uf_name)
         
         json.dump(piles_md[xtile],
@@ -146,11 +147,5 @@ def split_metatiles(output_dir, metatiles):
         print 'Process Row: ', ytile
         split_row_of_unit_fields(output_dir, metatiles, ytile)
 
-
-#     if choice_create_additional_layers == True:
-#         print 'Creating small/large scale images'
-#         for ytile in range(y_uf_count):
-#             create_additional_layers(output_dir, ...)
-        
     logging.info('Wrote %d piles to directory %s.',
                  x_uf_count * y_uf_count, output_dir)

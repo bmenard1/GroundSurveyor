@@ -105,7 +105,8 @@ def compute_spatial_cross_correlations(dc):
 
     for i_layer in range(3):
 
-        Y = dc.cube[i_layer][-1][:,:]
+#        Y = dc.cube[i_layer][-1][:,:]
+        Y = dc.median[i_layer][:,:]
 
         if i_layer == 0:
             my_key = 'cross_correlation_raw'
