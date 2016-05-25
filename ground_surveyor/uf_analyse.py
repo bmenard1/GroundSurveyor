@@ -54,6 +54,7 @@ def load_pile(pile_filename):
 	'cross_correlation_large': numpy.zeros(dc.n_file),
 	'sharpness': numpy.zeros(dc.n_file), 
 	'timestamp': numpy.zeros(dc.n_file), 
+        'intensity_median': numpy.zeros(dc.n_file),
 	'n_pixel_at_zero_intensity': numpy.zeros(dc.n_file)}
     
     for i_file in range(dc.n_file):
@@ -93,6 +94,7 @@ def analyse_pile(dc):
 	dc.metadata['n_pixel_at_zero_intensity'][i_file] = \
             (unit_field_image.shape[0] * unit_field_image.shape[1]) - numpy.count_nonzero(unit_field_image) 
 
+        dc.metadata['intensity_median'][i_file] = numpy.median(unit_field_image)
 
 
 
