@@ -3,16 +3,15 @@
 import argparse
 import logging
 import os
-import json
 
-from osgeo import gdal, gdal_array
+from ground_surveyor import uf_mosaic
 
     
 def main():
     aparser = argparse.ArgumentParser(
         description='Run analysis on a set of unit field piles')
 
-    aparser.add_argument('--measure', default='sharpness',
+    aparser.add_argument('--measure', default='normalized_sharpness',
                          help='metadata measure to maximize')
     aparser.add_argument('dir', default='.',
                          help='Directory containing a set of unit field piles.')
@@ -22,58 +21,17 @@ def main():
     logging.basicConfig(level=logging.INFO)
     #logging.basicConfig(level=logging.DEBUG)
 
-    mosaic_filename = os.path.join(args.dir,'mosaic.tif')
-    mosaic_ds = gdal.GetDriverByName('GTiff').Create(
-        mosaic_filename, 4096, 4096, 1, gdal.GDT_UInt16)
 
-    file_list = os.listdir(args.dir)
-    for filename in file_list:
-        if (not filename.startswith('uf_')) or (not filename.endswith('_metadata.json')):
-            continue
+    mosaic_filename = uf_mosaic.mosaic_metatile(
+        args.dir, 
+        selection_options = {
+            'order_field': args.measure,
+            },
+        processing_options = {
+            'normalize_intensity': True,
+            },
+        )
 
-        pile_name = '_'.join(filename.split('_')[1:3])
-
-        file_path = os.path.join(args.dir, filename)
-
-        pile_md = json.load(open(file_path))
-
-        print pile_name
-
-        sharpest_i = -1
-        sharpest_value = 0
-
-        for i in range(len(pile_md['sharpness'])):
-            sharpness = pile_md[args.measure][i]
-            if sharpness > sharpest_value:
-                sharpest_value = sharpness
-                sharpest_i = i
-
-        print sharpest_i, sharpest_value
-
-        
-        raw_filename = os.path.join(
-            args.dir,
-            'uf_' + pile_name + '_raw.tif')
-
-        raw = gdal_array.LoadFile(raw_filename)
-        if len(raw.shape) > 2:
-            best_img = raw[sharpest_i]
-        else:
-            best_img = raw
-
-#         gdal_array.SaveArray(
-#             best_img, 
-#             os.path.join(
-#                 args.dir,
-#                 'uf_' + pile_name + '_best.tif'))
-        
-        uf_i = int(pile_name.split('_')[0])
-        uf_j = int(pile_name.split('_')[1])
-
-        mosaic_ds.GetRasterBand(1).WriteArray(
-            best_img, uf_i * 256, uf_j * 256)
-
-    print 'See ', mosaic_filename
 
 if __name__ == '__main__':
     main()
