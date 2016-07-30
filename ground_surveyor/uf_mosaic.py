@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import numpy
 
 from osgeo import gdal
 
@@ -85,6 +86,18 @@ def merge_pile_into_mosaic(mosaic_ds,
     mosaic_ds.GetRasterBand(1).WriteArray(
         selected_img, uf_i * 256, uf_j * 256)
 
+    alpha_band = mosaic_ds.GetRasterBand(mosaic_ds.RasterCount)
+    if alpha_band.GetColorInterpretation() == gdal.GCI_AlphaBand:
+        
+        if alpha_band.DataType == gdal.GDT_UInt16:
+            opaque = 65535
+        else:
+            opaque = 255
+
+        alpha_band.WriteArray(
+            numpy.ones(selected_img.shape) * opaque,
+             uf_i * 256, uf_j * 256)
+        
 
 def make_metatile(pile_directory):
     mosaic_filename = os.path.join(pile_directory,'mosaic.tif')
