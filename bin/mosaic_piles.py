@@ -26,6 +26,9 @@ def main():
         args.dir, 
         selection_options = {
             'order_field': args.measure,
+            'cross_correlation_threshold': 0.25,
+            'small_cross_correlation_threshold': 0.30,
+            'zero_threshold': 0,
             },
         processing_options = {
             'normalize_intensity': True,

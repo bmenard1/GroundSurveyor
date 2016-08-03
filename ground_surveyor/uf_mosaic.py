@@ -20,12 +20,25 @@ def pick_best_pile_layer(pile_md_filename,
                                          'normalized_sharpness')
     cc_threshold = selection_options.get('cross_correlation_threshold',
                                          None)
+    small_cc_threshold = selection_options.get(
+        'small_cross_correlation_threshold',
+        None)
+    zero_threshold = selection_options.get('zero_threshold',
+                                           None)
     
     for i in range(len(pile_md['sharpness'])):
         if cc_threshold is not None:
             cc_raw = pile_md['cross_correlation_raw'][i]
             if cc_raw < cc_threshold:
                 continue
+
+        if small_cc_threshold is not None:
+            small_cc = pile_md['cross_correlation_small'][i]
+            if small_cc < small_cc_threshold:
+                continue
+
+        if zero_threshold is not None and pile_md['n_pixel_at_zero_intensity'][i] > zero_threshold:
+            continue
 
         if target_field == 'normalized_sharpness':
             target_value = pile_md['sharpness'][i] \
@@ -40,6 +53,9 @@ def pick_best_pile_layer(pile_md_filename,
     # If nothing met the threshold, try again without the threshold.
     if best_i == -1 and cc_threshold is not None:
         for i in range(len(pile_md['sharpness'])):
+            if zero_threshold is not None and pile_md['n_pixel_at_zero_intensity'][i] > zero_threshold:
+                continue
+
             if target_field == 'normalized_sharpness':
                 target_value = pile_md['sharpness'][i] \
                     / pile_md['intensity_median'][i]
